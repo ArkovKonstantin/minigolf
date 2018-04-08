@@ -140,3 +140,110 @@ class HolesMatchTestCase(TestCase):
             (0, 0, 0),
             (1, 0, 1),
         ])
+
+class HitsMatchTestCase2(TestCase):
+    def test_scenario(self):
+        players = [Player('A'), Player('B'), Player('C')]
+        m = HitsMatch(4, players)
+        self._first_hole(m)
+        self._second_hole(m)
+        self._third_hole(m)
+        self.assertFalse(m.finished)
+        self._fourth_hole(m)
+        self.assertEqual(m.get_winners(), [
+            players[0]
+        ])
+
+
+    def _first_hole(self, m):
+        m.hit()  # 1
+        m.hit(True)  # 2
+        for _ in range(5):
+            m.hit()  # 3 , 1
+        m.hit(True)  # 1
+        self.assertFalse(m.finished)
+        self.assertEqual(m.get_table(), [
+            ('A', 'B', 'C'),
+            (4, 1, None),
+            (None, None, None),
+            (None, None, None),
+            (None, None, None),
+        ])
+        for _ in range(6):
+            m.hit()  # 3
+        self.assertEqual(m.get_table(), [
+            ('A', 'B', 'C'),
+            (4, 1, 10),
+            (None, None, None),
+            (None, None, None),
+            (None, None, None),
+        ])
+
+    def _second_hole(self,m):
+        m.hit(True) # 2
+        self.assertEqual(m.get_table(), [
+            ('A', 'B', 'C'),
+            (4, 1, 10),
+            (None, 1, None),
+            (None, None, None),
+            (None, None, None),
+
+        ])
+        m.hit() # 3
+        m.hit(True) # 1
+        m.hit(True) # 3
+        self.assertEqual(m.get_table(), [
+            ('A', 'B', 'C'),
+            (4, 1, 10),
+            (1, 1, 2),
+            (None, None, None),
+            (None, None, None),
+        ])
+
+    def _third_hole(self,m):
+        m.hit(True)  # 3
+        self.assertEqual(m.get_table(), [
+            ('A', 'B', 'C'),
+            (4, 1, 10),
+            (1, 1, 2),
+            (None, None, 1),
+            (None, None, None),
+        ])
+        m.hit(True) # 1
+        for _ in range(9):
+            m.hit() # 2
+        self.assertEqual(m.get_table(), [
+            ('A', 'B', 'C'),
+            (4, 1, 10),
+            (1, 1, 2),
+            (1, 10, 1),
+            (None, None, None),
+        ])
+
+    def _fourth_hole(self,m):
+        m.hit(True) # 1
+        self.assertEqual(m.get_table(), [
+            ('A', 'B', 'C'),
+            (4, 1, 10),
+            (1, 1, 2),
+            (1, 10, 1),
+            (1, None, None),
+        ])
+        m.hit(True) # 2
+        m.hit(True) # 3
+        self.assertEqual(m.get_table(), [
+            ('A', 'B', 'C'),
+            (4, 1, 10),
+            (1, 1, 2),
+            (1, 10, 1),
+            (1, 1, 1),
+        ])
+
+
+
+
+
+
+
+
+
