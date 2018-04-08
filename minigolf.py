@@ -8,6 +8,9 @@ class Player:
 
 
 class Match(metaclass=ABCMeta):
+    MAX_HITS = 9
+    MAX_POINTS = MAX_HITS + 1
+
     def __init__(self, number_of_holes, arr_with_players):
         self.number_of_holes = number_of_holes
         self.arr_with_players = arr_with_players
@@ -15,6 +18,9 @@ class Match(metaclass=ABCMeta):
         self.lap = [None for player in self.arr_with_players]
         self.count = 0
         self.finished = False
+        self.round = 0
+        if number_of_holes < len(self.arr_with_players):
+            raise RuntimeError
 
     def get_table(self):
         result_table = self.table.copy()
@@ -55,9 +61,9 @@ class HitsMatch(Match):
             # Забившие игроки, пропускают удар
             if self.drop[self.count]:
                 try:
-                    self.count = self.drop.index(False, self.count, len(self.drop) - 1)
+                    self.count = self.drop.index(False, self.count, len(self.drop))
                 except ValueError:
-                    self.count = self.drop.index(False, 0, self.count)
+                    self.count = self.drop.index(False, 0, self.count + 1)
 
             try:
                 self.buff[self.count] += 1
@@ -69,21 +75,21 @@ class HitsMatch(Match):
 
             self.count += 1
             # Условие перехода к следующей лунке
-            if all(self.drop) or self.buff.count(9) > 0:
-                self.buff = [item + 1 if item == 9 else item for item in self.buff]
+            if all(self.drop) or self.buff.count(self.MAX_HITS) == self.drop.count(False):
+                self.buff = [self.MAX_POINTS if item == self.MAX_HITS else item for item in self.buff]
                 self.lap = self.buff
                 # добваить lap в таблицу
                 self.table.append(tuple(self.lap))
-                # отчистить lap
+                # отчистить lap, buff , drop
                 self.lap = [None for player in self.arr_with_players]
                 self.buff = [None for player in self.arr_with_players]
-                # Определяю какой игрок делает следующий удар
-                if success:
-                    if self.count == len(self.lap):
-                        self.count = 0
-                else:
-                    self.count -= 1
                 self.drop = [False for player in self.arr_with_players]
+                # Определяю какой игрок делает следующий удар
+                self.round += 1
+                if self.round == len(self.arr_with_players):
+                    self.round = 0
+                self.count = self.round
+                # Флаг на завершение матча
             table = self.get_table()
             if len(table) - 1 == self.number_of_holes and table[-1].count(None) == 0:
                 self.finished = True
@@ -94,7 +100,6 @@ class HolesMatch(Match):
         Match.__init__(self, number_of_holes, arr_with_players)
         self.num_of_try = [0 for player in self.arr_with_players]
         self.num_of_hit = 0
-        self.round = 0
 
     def hit(self, success=False):
         self.num_of_hit += 1
@@ -105,6 +110,7 @@ class HolesMatch(Match):
                 self.count = 0
             if success:
                 self.lap[self.count] = 1
+            # Счетчик ударов(сколько раз вызывалсся hit())
             try:
                 self.num_of_try[self.count] += 1
             except TypeError:
@@ -112,7 +118,7 @@ class HolesMatch(Match):
             self.count += 1
             # Условие перехода к следующей лунке
             if self.num_of_hit % len(self.arr_with_players) == 0 and (
-                            self.lap.count(1) > 0 or self.num_of_try.count(10) > 0):
+                            self.lap.count(1) > 0 or self.num_of_try.count(self.MAX_POINTS) > 0):
                 # Определяю какой игрок делает следующий удар
                 self.round += 1
                 if self.round > len(self.arr_with_players):
@@ -123,9 +129,8 @@ class HolesMatch(Match):
                 self.table.append(tuple([0 if score is None else score for score in self.lap]))
                 self.lap = [None for player in self.arr_with_players]
                 self.num_of_try = [0 for player in self.arr_with_players]
+            # Флаг на завершение матча
             table = self.get_table()
             if len(table) - 1 == self.number_of_holes and table[-1].count(None) == 0:
                 self.finished = True
-
-
 
