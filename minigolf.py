@@ -10,6 +10,7 @@ class Player:
 class Match(metaclass=ABCMeta):
     MAX_HITS = 9
     MAX_POINTS = MAX_HITS + 1
+    win_fun = min
 
     def __init__(self, number_of_holes, arr_with_players):
         self.number_of_holes = number_of_holes
@@ -34,10 +35,7 @@ class Match(metaclass=ABCMeta):
         table = self.get_table()[1:]
         try:
             table = [reduce(lambda x, y: x + y, i) for i in (zip(*table))]
-            if type(self) == HitsMatch:
-                return [self.arr_with_players[index] for index, score in enumerate(table) if score == min(table)]
-            elif type(self) == HolesMatch:
-                return [self.arr_with_players[index] for index, score in enumerate(table) if score == max(table)]
+            return [self.arr_with_players[index] for index, score in enumerate(table) if score == self.win_fun(table)]
         except TypeError:
             raise RuntimeError
 
@@ -47,6 +45,8 @@ class Match(metaclass=ABCMeta):
 
 
 class HitsMatch(Match):
+    win_fun = min
+
     def __init__(self, number_of_holes, arr_with_players):
         Match.__init__(self, number_of_holes, arr_with_players)
         self.drop = [False for player in self.arr_with_players]
@@ -96,6 +96,8 @@ class HitsMatch(Match):
 
 
 class HolesMatch(Match):
+    win_fun = max
+
     def __init__(self, number_of_holes, arr_with_players):
         Match.__init__(self, number_of_holes, arr_with_players)
         self.num_of_try = [0 for player in self.arr_with_players]
@@ -133,4 +135,3 @@ class HolesMatch(Match):
             table = self.get_table()
             if len(table) - 1 == self.number_of_holes and table[-1].count(None) == 0:
                 self.finished = True
-
